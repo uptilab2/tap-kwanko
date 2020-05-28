@@ -1,0 +1,67 @@
+{
+    "title":"Schema from sales",
+    "type": "object",
+    "required" : ["idcampagne"],
+    "properties":
+     {
+        "idcampagne": {
+          "type": "integer"
+         },
+        "nomcampagne": {
+          "type": "string"
+
+        },
+        "idsite": {
+          "type": "integer"
+
+        },
+        "nomsite": {
+          "type": "string"
+
+        },
+        "cout": {
+          "type": "number"
+
+        },
+        "montant": {
+          "type": "number"
+
+        },
+        "monnaie": {
+          "type": "string"
+
+        },
+        "etat": {
+          "type": "string",
+          "enum": ["a", "v", "r"]
+
+        },
+        "date": {
+          "type": "string"
+
+        },
+        "dcookie": {
+          "type": "string"
+
+        },
+        "validation": {
+          "type": "string"
+
+        },
+        "cookie": {
+          "type": "string",
+          "enum": ["clic", "affichage", "reattribution"]
+
+
+        },
+        "tag": {
+          "type": "string"
+
+        },
+        "rappel": {
+          "type": "integer"
+
+        }
+
+     }
+}

@@ -1,0 +1,67 @@
+{
+    "title":"Schema from stats dim1",
+    "type": "object",
+    "required" : ["idcamp"],
+    "properties":
+     {
+        "idcamp": {
+          "type": "integer"
+         },
+        "nomcamp": {
+          "type": "string"
+
+        },
+        "monnaie": {
+          "type": "string"
+
+        },
+        "affcpt": {
+          "type": "integer"
+
+        },
+        "affval": {
+          "type": "integer"
+
+        },
+        "clicpt": {
+          "type": "integer"
+
+        },
+        "clival": {
+          "type": "integer"
+
+        },
+        "dclcpt": {
+          "type": "integer"
+
+        },
+        "dclval": {
+          "type": "integer"
+
+        },
+        "foratt": {
+          "type": "number"
+
+        },
+        "forval": {
+          "type": "number"
+
+        },
+        "venatt": {
+          "type": "number"
+
+        },
+        "venval": {
+          "type": "number"
+
+        },
+        "depatt": {
+          "type": "number"
+
+        },
+        "depval": {
+          "type": "number"
+
+        }
+     }
+}

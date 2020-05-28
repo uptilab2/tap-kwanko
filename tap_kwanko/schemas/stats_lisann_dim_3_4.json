@@ -1,0 +1,64 @@
+{
+    "title":"Schema from stats dim 3 and 4",
+    "type": "object",
+    "required" : ["date"],
+    "properties":
+     {
+        "date": {
+          "type": "string"
+
+        },
+        "monnaie": {
+          "type": "string"
+
+        },
+        "affcpt": {
+          "type": "integer"
+
+        },
+        "affval": {
+          "type": "integer"
+
+        },
+        "clicpt": {
+          "type": "integer"
+
+        },
+        "clival": {
+          "type": "integer"
+
+        },
+        "dclcpt": {
+          "type": "integer"
+
+        },
+        "dclval": {
+          "type": "integer"
+
+        },
+        "foratt": {
+          "type": "number"
+
+        },
+        "forval": {
+          "type": "number"
+
+        },
+        "venatt": {
+          "type": "number"
+
+        },
+        "venval": {
+          "type": "number"
+
+        },
+        "depatt": {
+          "type": "number"
+
+        },
+        "depval": {
+          "type": "number"
+
+        }
+     }
+}
