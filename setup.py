@@ -18,8 +18,13 @@ setup(
     tap-kwanko=tap_kwanko:main
     """,
     packages=["tap_kwanko"],
-    package_data = {
-        "schemas": ["tap_kwanko/schemas/*.json"]
+    package_data={
+        'tap_kwanko/schemas': [
+            "sale_reqann.json",
+            "stats_lisann_dim_1.json",
+            "stats_lisann_dim_2.json",
+            "stats_lisann_dim_3_4.json",
+        ],
     },
     include_package_data=True,
 )

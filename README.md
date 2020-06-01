@@ -1,2 +1,7 @@
-tap-kwanko
-This tap is currently under development, and incomplete.
+# tap-kwanko
+
+This is currently under development 
+
+---
+
+Copyright &copy; 2020 Reeport

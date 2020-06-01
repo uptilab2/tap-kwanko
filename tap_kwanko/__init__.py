@@ -1,9 +1,8 @@
-import json
 #!/usr/bin/env python3
 import os
 import json
 import singer
-from singer import utils, metadata
+from singer import utils
 from singer.catalog import Catalog, CatalogEntry
 from singer.schema import Schema
 import requests
@@ -11,7 +10,6 @@ import requests
 
 REQUIRED_CONFIG_KEYS = ["debut", "fin", "stats_or_sale", "authl", "authv"]
 LOGGER = singer.get_logger()
-
 
 
 def get_abs_path(path):
@@ -60,38 +58,51 @@ def sync(config, state, catalog):
     """ Sync data from tap source """
     # Loop over selected streams in catalog
     for stream in catalog.get_selected_streams(state):
-        if config['stats_or_sale'] == "/lisann.php" and "stats_lisann" not in stream.tap_stream_id:
-            print('Skipping %s' %stream.tap_stream_id)
-            continue
-        elif config['stats_or_sale'] == "/reqann.php" and "sale_reqann" not in stream.tap_stream_id:
+        if config['stats_or_sale'] == "/lisann.php" \
+                and "stats_lisann" not in stream.tap_stream_id:
+
             print('Skipping %s' % stream.tap_stream_id)
             continue
+
+        elif config['stats_or_sale'] == "/reqann.php" \
+                and "sale_reqann" not in stream.tap_stream_id:
+
+            print('Skipping %s' % stream.tap_stream_id)
+            continue
+
         elif config['stats_or_sale'] != "/reqann.php":
-            if stream.tap_stream_id=="stats_lisann_dim_1" and config['dim'] != 1:
+            if stream.tap_stream_id == "stats_lisann_dim_1" \
+                    and config['dim'] != 1:
+
                 print('Skipping %s' % stream.tap_stream_id)
                 continue
-            elif stream.tap_stream_id=="stats_lisann_dim_2" and config['dim'] != 2:
+
+            elif stream.tap_stream_id == "stats_lisann_dim_2" \
+                    and config['dim'] != 2:
+
                 print('Skipping %s' % stream.tap_stream_id)
                 continue
-            elif stream.tap_stream_id=="stats_lisann_dim_3_4" and config['dim'] != 3:
-                if stream.tap_stream_id=="stats_lisann_dim_3_4" and config['dim'] != 4:
+
+            elif stream.tap_stream_id == "stats_lisann_dim_3_4" \
+                    and config['dim'] != 3:
+
+                if stream.tap_stream_id == "stats_lisann_dim_3_4" \
+                        and config['dim'] != 4:
+
                     print('Skipping %s' % stream.tap_stream_id)
                     continue
 
         LOGGER.info("Syncing stream:" + stream.tap_stream_id)
         bookmark_column = stream.replication_key
-        is_sorted = True  # TODO: indicate whether data is sorted ascending on bookmark value
+        # TODO: indicate whether data is sorted ascending on bookmark value
+        is_sorted = True
         singer.write_schema(
             stream_name=stream.stream,
             schema=stream.stream,
             key_properties=stream.key_properties,
         )
 
-
-
-        # TODO: delete and replace this inline function with your own data retrieval process:
         tap_data = get_data_from_API(config)
-
         max_bookmark = None
 
         for row in tap_data:
@@ -118,27 +129,36 @@ def sync(config, state, catalog):
             singer.write_state({stream.tap_stream_id: max_bookmark})
     return
 
+
 def get_data_from_API(config):
     url = "https://stat.netaffiliation.com" + config['stats_or_sale']
     if config['stats_or_sale'] == "/reqann.php":
-        response = requests.get(url, params={"authl": config['authl'], "authv": config['authv'],
-                                         "debut": config['debut'], "fin": config['fin'],
-                                         "champs": config['champs_reqann']})
+        response = requests.get(url, params={"authl": config['authl'],
+                                             "authv": config['authv'],
+                                             "debut": config['debut'],
+                                             "fin": config['fin'],
+                                             "champs": config['champs_reqann']})
     elif config['stats_or_sale'] == "/lisann.php":
-        response = requests.get(url, params={"authl": config['authl'], "authv": config['authv'],
-                                             "dim": config['dim'], "camp": config['camp'],
-                                         "debut": config['debut'], "fin": config['fin'],
-                                             "per": config['per'],"champs": config['champs_lisann'],
+        response = requests.get(url, params={"authl": config['authl'],
+                                             "authv": config['authv'],
+                                             "dim": config['dim'],
+                                             "camp": config['camp'],
+                                             "debut": config['debut'],
+                                             "fin": config['fin'],
+                                             "per": config['per'],
+                                             "champs": config['champs_lisann'],
                                              "site": config['site']})
 
     print("Result : %s" % response.text.splitlines()[0])
 
     if "OK" in response.text.splitlines()[0]:
-        response = response.text.splitlines()[1:]  # skip 1st line telling how long the result is
+        # skip 1st line telling how long the result is
+        response = response.text.splitlines()[1:]
     else:
         print("Error on getting data from Kwanko (get_data_from_API())")
         return
     return response
+
 
 @utils.handle_top_exception(LOGGER)
 def main():
@@ -157,7 +177,6 @@ def main():
         else:
             catalog = discover()
         sync(args.config, args.state, catalog)
-
 
 
 if __name__ == "__main__":
