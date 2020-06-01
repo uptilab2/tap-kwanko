@@ -17,11 +17,11 @@ setup(
     [console_scripts]
     tap-kwanko=tap_kwanko:main
     """,
-    include_package_data=True,
     packages=["tap_kwanko"],
     package_data={
         'tap_kwanko/schemas': [
             "*.json",
         ],
     },
+    include_package_data=True,
 )
