@@ -23,7 +23,7 @@ setup(
             "sale_reqann.json",
             "stats_lisann_dim_1.json",
             "stats_lisann_dim_2.json",
-            "stats_lisann_dim_3_4.json"
+            "stats_lisann_dim_3_4.json",
         ],
     },
     include_package_data=True,
