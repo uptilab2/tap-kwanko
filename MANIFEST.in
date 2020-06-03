@@ -1,2 +1,2 @@
 include LICENSE
-include tap_weather/schemas/*.json
+include tap_kwanko/schemas/*.json

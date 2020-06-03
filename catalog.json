@@ -2,6 +2,8 @@
   "streams": [
     {
       "tap_stream_id": "sale_reqann",
+      "replication_key": "date",
+      "replication_method": "INCREMENTAL",
       "key_properties": [],
       "schema": {
         "selected": true,
@@ -31,6 +33,8 @@
             "type": "string"
           },
           "date": {
+            "description": "The date for row",
+            "format": "date-time",
             "type": "string"
           },
           "dcookie": {
@@ -54,66 +58,10 @@
       "stream": "sale_reqann",
       "metadata": []
     },
-        {
-      "tap_stream_id": "stats_lisann_dim_1",
-      "key_properties": [],
-      "schema": {
-        "selected": true,
-        "properties": {
-          "idcamp": {
-            "type": "integer"
-          },
-          "nomcamp": {
-            "type": "string"
-          },
-          "monnaie": {
-            "type": "string"
-          },
-          "affcpt": {
-            "type": "integer"
-          },
-          "affval": {
-            "type": "integer"
-          },
-          "clicpt": {
-            "type": "integer"
-          },
-          "clival": {
-            "type": "integer"
-          },
-          "dclcpt": {
-            "type": "integer"
-          },
-          "dclval": {
-            "type": "integer"
-          },
-          "foratt": {
-            "type": "number"
-          },
-          "forval": {
-            "type": "number"
-          },
-          "venatt": {
-            "type": "number"
-          },
-          "venval": {
-            "type": "number"
-          },
-          "depatt": {
-            "type": "number"
-          },
-          "depval": {
-            "type": "number"
-          }
-        },
-        "type": "object"
-      },
-      "stream": "stats_lisann_dim_1",
-      "metadata": []
-    },
-
     {
       "tap_stream_id": "stats_lisann_dim_2",
+      "replication_key": "idsite",
+      "replication_method": "FULL_TABLE",
       "key_properties": [],
       "schema": {
         "selected": true,
@@ -170,12 +118,75 @@
       "metadata": []
     },
     {
+      "tap_stream_id": "stats_lisann_dim_1",
+      "replication_key": "idcamp",
+      "replication_method": "FULL_TABLE",
+      "key_properties": [],
+      "schema": {
+        "selected": true,
+        "properties": {
+          "idcamp": {
+            "type": "integer"
+          },
+          "nomcamp": {
+            "type": "string"
+          },
+          "monnaie": {
+            "type": "string"
+          },
+          "affcpt": {
+            "type": "integer"
+          },
+          "affval": {
+            "type": "integer"
+          },
+          "clicpt": {
+            "type": "integer"
+          },
+          "clival": {
+            "type": "integer"
+          },
+          "dclcpt": {
+            "type": "integer"
+          },
+          "dclval": {
+            "type": "integer"
+          },
+          "foratt": {
+            "type": "number"
+          },
+          "forval": {
+            "type": "number"
+          },
+          "venatt": {
+            "type": "number"
+          },
+          "venval": {
+            "type": "number"
+          },
+          "depatt": {
+            "type": "number"
+          },
+          "depval": {
+            "type": "number"
+          }
+        },
+        "type": "object"
+      },
+      "stream": "stats_lisann_dim_1",
+      "metadata": []
+    },
+    {
       "tap_stream_id": "stats_lisann_dim_3_4",
+      "replication_key": "date",
+      "replication_method": "INCREMENTAL",
       "key_properties": [],
       "schema": {
         "selected": true,
         "properties": {
           "date": {
+            "description": "The date of the row",
+            "format": "date-time",
             "type": "string"
           },
           "monnaie": {

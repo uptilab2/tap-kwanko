@@ -5,8 +5,9 @@
     "properties":
      {
         "date": {
-          "type": "string"
-
+          "type": "string",
+          "format": "date-time",
+          "description": "The date of the row"
         },
         "monnaie": {
           "type": "string"

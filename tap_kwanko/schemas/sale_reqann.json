@@ -37,7 +37,9 @@
 
         },
         "date": {
-          "type": "string"
+          "type": "string",
+          "format": "date-time",
+          "description": "The date for row"
 
         },
         "dcookie": {
@@ -62,6 +64,11 @@
           "type": "integer"
 
         }
+     },
+    "metadata" : {
+    "selected" : true,
+    "some-other-metadata" : "whatever"
+    },
+    "breadcrumb" : ["properties", "some-field-name"]
 
-     }
 }
