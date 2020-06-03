@@ -3,7 +3,6 @@ import os
 import json
 import singer
 from singer import utils
-from singer import metadata
 from singer.catalog import Catalog, CatalogEntry
 from singer.schema import Schema
 import requests
@@ -29,38 +28,22 @@ def load_schemas():
     return schemas
 
 
-def populate_metadata(schema_name, schema):
-    mdata = metadata.new()
-    #mdata = metadata.write(mdata, (), 'forced-replication-method', KEY_PROPERTIES[schema_name])
-    mdata = metadata.write(mdata, ('properties'), 'inclusion', 'automatic')
-
-    return mdata
-
-
 def discover():
     raw_schemas = load_schemas()
     streams = []
 
     for stream_id, schema in raw_schemas.items():
-        # TODO: populate any metadata and stream's key properties here..
         stream_metadata = []
         key_properties = []
 
-        mdata = populate_metadata(stream_id, schema)
-        print('meta is :')
-        print(mdata)
         if stream_id == "sale_reqann":
             replication_key = list(schema.properties.keys())[8]
         else:
             replication_key = list(schema.properties.keys())[0]
 
-        if stream_id in ['stats_lisann_dim_1', 'stats_lisann_dim_2'] :
-            print(stream_id)
-            print("Full table")
+        if stream_id in ['stats_lisann_dim_1', 'stats_lisann_dim_2']:
             replication_method = "FULL_TABLE"
         else:
-            print(stream_id)
-            print("incremental")
             replication_method = "INCREMENTAL"
         streams.append(
             CatalogEntry(
@@ -68,7 +51,7 @@ def discover():
                 stream=stream_id,
                 schema=schema,
                 key_properties=key_properties,
-                metadata=metadata.to_list(mdata),
+                metadata=stream_metadata,
                 replication_key=replication_key,
                 is_view=None,
                 database=None,
@@ -120,7 +103,7 @@ def sync(config, state, catalog):
     """ Sync data from tap source """
     # Loop over selected streams in catalog
     for stream in catalog.get_selected_streams(state):
-        if loop_continue(config, stream) == True:
+        if loop_continue(config, stream) is True:
             continue
 
         LOGGER.info("Syncing stream:" + stream.tap_stream_id)
@@ -142,7 +125,7 @@ def sync(config, state, catalog):
             for i in range(0, len(value)):
                 record_dict[keys[i]] = value[i]
 
-            #singer.write_records(stream.tap_stream_id, [record_dict])
+            singer.write_records(stream.tap_stream_id, [record_dict])
 
         bookmark_state(bookmark_column, config, tap_data, state)
     return
@@ -151,31 +134,38 @@ def sync(config, state, catalog):
 def bookmark_state(bookmark_column, config, tap_data, state):
     if bookmark_column == "date" and config['stats_or_sale'] == "/reqann.php":
         last_date = tap_data[-1].split(";")[8]
-        new_state = singer.write_bookmark(state, "properties", bookmark_column + "reqann", last_date)
+        new_state = singer.write_bookmark(state, "properties",
+                                          "date_reqann", last_date)
 
         singer.write_state(new_state)
 
     elif bookmark_column == "idcamp" and config['dim'] == 1:
-        last_idcamp = tap_data[-1].split(";")[0]
-        new_state = singer.write_bookmark(state, "properties", bookmark_column + "lisann_dim_1", last_idcamp)
+        last_date = datetime.now().isoformat(timespec='hours')[0:10]
+        new_state = singer.write_bookmark(state, "properties",
+                                          "date_lisann_dim_1", last_date)
 
         singer.write_state(new_state)
 
     elif bookmark_column == "idsite" and config['dim'] == 2:
-        last_idsite = tap_data[-1].split(";")[0]
-        new_state = singer.write_bookmark(state, "properties", bookmark_column + "lisann_dim_2", last_idsite)
+        last_date = datetime.now().isoformat(timespec='hours')[0:10]
+        new_state = singer.write_bookmark(state, "properties",
+                                          "date_lisann_dim_2", last_date)
 
         singer.write_state(new_state)
 
     elif bookmark_column == "date" and config['dim'] == 3:
         last_date = tap_data[-1].split(";")[0]
-        new_state = singer.write_bookmark(state, "properties", bookmark_column + "lisann_dim_3", last_date)
+        last_date = last_date[0:4] + "-" + last_date[4:6] + "-" + last_date[6:8]
+
+        new_state = singer.write_bookmark(state, "properties", "date_lisann_dim_3", last_date)
 
         singer.write_state(new_state)
 
     elif bookmark_column == "date" and config['dim'] == 4:
         last_date = tap_data[-1].split(";")[0]
-        new_state = singer.write_bookmark(state, "properties", bookmark_column + "lisann_dim_4", last_date)
+        last_date = last_date[0:4] + "-" + last_date[4:6] + "-01"
+
+        new_state = singer.write_bookmark(state, "properties", "date_lisann_dim_4", last_date)
 
         singer.write_state(new_state)
 
@@ -184,13 +174,37 @@ def bookmark_state(bookmark_column, config, tap_data, state):
 
 def get_data_from_API(config, state):
 
-    if config['stats_or_sale'] == "/reqann.php" and state['reqann_bookmarked_date'] != None:
-        debut = state['reqann_bookmarked_date'][0:10]
-    elif config['stats_or_sale'] == "/reqann.php" and config['dim'] == 3 and state['lisann_3_bookmarked_date'] != None:
-        debut = state['lisann_3_bookmarked_date'][0:10]
-    elif config['stats_or_sale'] == "/reqann.php" and config['dim'] == 4 and state['lisann_4_bookmarked_date'] != None:
-        debut = state['lisann_4_bookmarked_date'][0:10]
-    else:
+    try:
+        state = state['value']['bookmarks']['properties']
+        if config['stats_or_sale'] == "/reqann.php" \
+                and state['date_reqann'] is not None:
+            debut = state['date_reqann'][0:10]
+
+        elif config['stats_or_sale'] == "/lisann.php" \
+                and config['dim'] == 1 and state['date_lisann_dim_1'] is not None:
+
+            debut = state['date_lisann_dim_1'][0:10]
+
+        elif config['stats_or_sale'] == "/lisann.php" \
+                and config['dim'] == 2 and state['date_lisann_dim_2'] is not None:
+
+            debut = state['date_lisann_dim_2'][0:10]
+
+        elif config['stats_or_sale'] == "/lisann.php" \
+                and config['dim'] == 3 and state['date_lisann_dim_3'] is not None:
+
+            debut = state['date_lisann_dim_3'][0:10]
+
+        elif config['stats_or_sale'] == "/lisann.php" \
+                and config['dim'] == 4 and state['date_lisann_dim_4'] is not None:
+
+            debut = state['date_lisann_dim_4'][0:10]
+
+        else:
+
+            debut = config['debut']
+
+    except KeyError:
         debut = config['debut']
 
     url = "https://stat.netaffiliation.com" + config['stats_or_sale']
