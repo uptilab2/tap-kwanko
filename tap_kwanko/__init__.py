@@ -256,23 +256,21 @@ def get_data_from_API(config, state, tap_stream_id):
     today = datetime.now().isoformat(timespec='hours')[0:10]
     print("start date is : %s" % debut)
     if tap_stream_id == "sale":
+        champs_reqann = "idcampagne,nomcampagne,argann,idsite,cout,montant,monnaie,etat,date,dcookie,validation,cookie,tag,rappel",
+
         url = "https://stat.netaffiliation.com/reqann.php"
         response = requests.get(url, params={"authl": config['authl'],
                                              "authv": config['authv'],
                                              "debut": debut,
                                              "fin": today,
-                                             "champs": config['champs_reqann']})
+                                             "champs": champs_reqann})
     elif "stats" in tap_stream_id:
         url = "https://stat.netaffiliation.com/lisann.php"
         response = requests.get(url, params={"authl": config['authl'],
                                              "authv": config['authv'],
                                              "dim": dim,
-                                             "camp": config['camp'],
                                              "debut": debut,
-                                             "fin": today,
-                                             "per": config['per'],
-                                             "champs": config['champs_lisann'],
-                                             "site": config['site']})
+                                             "fin": today})
 
     print("Result : %s" % response.text.splitlines()[0])
 
