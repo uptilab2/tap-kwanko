@@ -19,7 +19,9 @@ setup(
     """,
     packages=["tap_kwanko"],
     package_data={
-        "schemas": ["tap_kwanko/schemas/*.json"]
+        'tap_kwanko/schemas': [
+            "*.json",
+        ],
     },
     include_package_data=True,
 )
