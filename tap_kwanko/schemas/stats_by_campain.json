@@ -1,14 +1,18 @@
 {
-    "title":"Schema from stats dim 2",
+    "title":"Schema from stats dim1",
     "type": "object",
-    "required" : ["idsite"],
+    "required" : ["idcamp"],
     "properties":
      {
-        "idsite": {
-          "type": "integer"
-
+        "date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date of the row"
         },
-        "nomsite": {
+        "idcamp": {
+          "type": "integer"
+         },
+        "nomcamp": {
           "type": "string"
 
         },
