@@ -1,10 +1,18 @@
 {
-    "title":"Schema from stats dim 3 and 4",
+    "title":"Schema from stats dim1",
     "type": "object",
-    "required" : ["date"],
+    "required" : ["idcamp"],
     "properties":
      {
         "date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date of the row"
+        },
+        "idcamp": {
+          "type": "integer"
+         },
+        "nomcamp": {
           "type": "string"
 
         },

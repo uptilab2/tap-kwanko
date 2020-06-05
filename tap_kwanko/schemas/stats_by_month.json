@@ -1,16 +1,13 @@
 {
-    "title":"Schema from stats dim 2",
+    "title":"Schema from stats dim 3 and 4",
     "type": "object",
-    "required" : ["idsite"],
+    "required" : ["date"],
     "properties":
      {
-        "idsite": {
-          "type": "integer"
-
-        },
-        "nomsite": {
-          "type": "string"
-
+        "date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date of the row"
         },
         "monnaie": {
           "type": "string"

@@ -1,15 +1,13 @@
 {
-    "title":"Schema from stats dim1",
+    "title":"Schema from stats dim 3 and 4",
     "type": "object",
-    "required" : ["idcamp"],
+    "required" : ["date"],
     "properties":
      {
-        "idcamp": {
-          "type": "integer"
-         },
-        "nomcamp": {
-          "type": "string"
-
+        "date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date of the row"
         },
         "monnaie": {
           "type": "string"
