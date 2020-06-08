@@ -65,7 +65,8 @@ def sync(config, state, catalog):
         LOGGER.info("Syncing stream:" + stream.tap_stream_id)
         bookmark_column = stream.replication_key
         schema = stream.schema.to_dict()
-
+        print("schema is : ")
+        print(schema)
         singer.write_schema(
             stream_name=stream.stream,
             schema=schema,
@@ -160,7 +161,7 @@ def sync(config, state, catalog):
 
 def bookmark_state(bookmark_column, tap_stream_id, tap_data, config, state):
     if bookmark_column == "date" and "sale" in tap_stream_id:
-        last_date = tap_data[-1].split(";")[8]
+        last_date = tap_data[-1].split(";")[9]
         new_state = singer.write_bookmark(state, "properties",
                                           "date_sale", last_date)
 
