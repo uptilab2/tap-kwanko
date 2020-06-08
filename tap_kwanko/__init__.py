@@ -256,7 +256,7 @@ def get_data_from_API(config, state, tap_stream_id):
 
     today = datetime.now().isoformat(timespec='hours')[0:10]
     if tap_stream_id == "sale":
-        champs_reqann = "idcampagne,nomcampagne,argann,idsite,cout,montant,monnaie,etat,date,dcookie,validation,cookie,tag,rappel",
+        champs_reqann = "idcampagne,nomcampagne,argann,idsite,nomsite,cout,montant,monnaie,etat,date,dcookie,validation,cookie,tag,rappel",
 
         url = "https://stat.netaffiliation.com/reqann.php"
         response = requests.get(url, params={"authl": config['authl'],
@@ -264,6 +264,8 @@ def get_data_from_API(config, state, tap_stream_id):
                                              "debut": debut,
                                              "fin": today,
                                              "champs": champs_reqann})
+        print("resp is :")
+        print(response.text.splitlines())
     elif "stats" in tap_stream_id:
         url = "https://stat.netaffiliation.com/lisann.php"
         response = requests.get(url, params={"authl": config['authl'],

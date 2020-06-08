@@ -11,6 +11,10 @@
           "type": "string"
 
         },
+        "argann": {
+          "type": "string"
+
+        },
         "idsite": {
           "type": "integer"
 
