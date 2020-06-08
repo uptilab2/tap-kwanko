@@ -102,7 +102,8 @@ def sync(config, state, catalog):
 
                     for j in range(0, len(value)):
                         if j == 0 : # init date and skip idcamp and nomcamp
-                            record_dict[keys[0]] = value[0]
+                            last_date = value[0][0:4] + "-" + value[0][4:6] + "-" + value[0][6:8]
+                            record_dict[keys[0]] = last_date
                         else:
                             record_dict[keys[j+2]] = value[j]
                     singer.write_records(stream.tap_stream_id, [record_dict])
@@ -135,7 +136,8 @@ def sync(config, state, catalog):
 
                     for j in range(0, len(value)):
                         if j == 0 : # init date and skip idsite and nomsite
-                            record_dict[keys[0]] = value[0]
+                            last_date = value[0][0:4] + "-" + value[0][4:6] + "-" + value[0][6:8]
+                            record_dict[keys[0]] = last_date
                         else:
                             record_dict[keys[j+2]] = value[j]
                     singer.write_records(stream.tap_stream_id, [record_dict])
@@ -150,6 +152,15 @@ def sync(config, state, catalog):
                 record_dict = {}
                 for i in range(0, len(value)):
                     record_dict[keys[i]] = value[i]
+
+                    if "stats_by_day" in stream.tap_stream_id:
+                        last_date = value[0][0:4] + "-" + value[0][4:6] + "-" + value[0][6:8]
+                        record_dict[keys[0]] = last_date
+
+                    elif "stats_by_month" in stream.tap_stream_id:
+                        last_date = value[0][0:4] + "-" + value[0][4:6] + "-01"
+                        record_dict[keys[0]] = last_date
+
 
                 singer.write_records(stream.tap_stream_id, [record_dict])
 
