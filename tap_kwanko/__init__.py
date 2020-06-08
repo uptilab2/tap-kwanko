@@ -65,8 +65,6 @@ def sync(config, state, catalog):
         LOGGER.info("Syncing stream:" + stream.tap_stream_id)
         bookmark_column = stream.replication_key
         schema = stream.schema.to_dict()
-        print("schema is : ")
-        print(schema)
         singer.write_schema(
             stream_name=stream.stream,
             schema=schema,
@@ -265,8 +263,6 @@ def get_data_from_API(config, state, tap_stream_id):
                                              "debut": debut,
                                              "fin": today,
                                              "champs": champs_reqann})
-        print("resp is :")
-        print(response.text.splitlines())
     elif "stats" in tap_stream_id:
         url = "https://stat.netaffiliation.com/lisann.php"
         response = requests.get(url, params={"authl": config['authl'],
