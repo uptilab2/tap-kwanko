@@ -64,9 +64,11 @@ def sync(config, state, catalog):
 
         LOGGER.info("Syncing stream:" + stream.tap_stream_id)
         bookmark_column = stream.replication_key
+        schema = stream.schema.to_dict()
+
         singer.write_schema(
             stream_name=stream.stream,
-            schema=stream.stream,
+            schema=schema,
             key_properties=stream.key_properties,
         )
 
@@ -239,7 +241,6 @@ def get_state_info(config, state, tap_stream_id):
 
 
 def get_data_from_API(config, state, tap_stream_id):
-    print("stream is : %s" % tap_stream_id)
     dim = 3
 
     dim, debut = get_state_info(config, state, tap_stream_id)
@@ -254,7 +255,6 @@ def get_data_from_API(config, state, tap_stream_id):
         dim = 4
 
     today = datetime.now().isoformat(timespec='hours')[0:10]
-    print("start date is : %s" % debut)
     if tap_stream_id == "sale":
         champs_reqann = "idcampagne,nomcampagne,argann,idsite,cout,montant,monnaie,etat,date,dcookie,validation,cookie,tag,rappel",
 
@@ -272,7 +272,6 @@ def get_data_from_API(config, state, tap_stream_id):
                                              "debut": debut,
                                              "fin": today})
 
-    print("Result : %s" % response.text.splitlines()[0])
 
     if "OK" in response.text.splitlines()[0]:
         # skip 1st line telling how long the result is
