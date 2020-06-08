@@ -1,5 +1,5 @@
 {
-    "title":"Schema from stats dim 2",
+    "title":"Schema from stats idsite",
     "type": "object",
     "required" : ["idsite"],
     "properties":

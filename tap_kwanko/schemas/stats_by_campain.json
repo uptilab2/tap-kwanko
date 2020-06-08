@@ -1,5 +1,5 @@
 {
-    "title":"Schema from stats dim1",
+    "title":"Schema from stats campain",
     "type": "object",
     "required" : ["idcamp"],
     "properties":

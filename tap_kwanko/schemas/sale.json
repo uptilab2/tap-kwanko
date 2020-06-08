@@ -64,11 +64,5 @@
           "type": "integer"
 
         }
-     },
-    "metadata" : {
-    "selected" : true,
-    "some-other-metadata" : "whatever"
-    },
-    "breadcrumb" : ["properties", "some-field-name"]
-
+     }
 }

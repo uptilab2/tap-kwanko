@@ -1,5 +1,5 @@
 {
-    "title":"Schema from stats dim 3 and 4",
+    "title":"Schema from stats month",
     "type": "object",
     "required" : ["date"],
     "properties":
