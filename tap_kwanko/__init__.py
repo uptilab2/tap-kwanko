@@ -6,8 +6,7 @@ from singer import utils
 from singer.catalog import Catalog, CatalogEntry
 from singer.schema import Schema
 import requests
-from datetime import datetime
-
+from datetime import datetime, timedelta
 
 REQUIRED_CONFIG_KEYS = ["debut", "authl", "authv"]
 LOGGER = singer.get_logger()
@@ -73,43 +72,13 @@ def sync(config, state, catalog):
 
         id_list = set()
         name_list = set()
+        if stream.tap_stream_id in ["stats_by_campain", "stats_by_site"]:
+            if stream.tap_stream_id == "stats_by_campain":
+                select_data_by_campain_or_site = "campain"
+            else:
+                select_data_by_campain_or_site = "site"
 
-        if "stats_by_campain" in stream.tap_stream_id:
-            tap_data = get_data_from_API(config, state, "stats_by_campain")
-
-            for row in tap_data:
-                value = row.split(";")
-                id_value = value[0]
-                name_value = value[1]
-
-                id_list.add(id_value)
-                name_list.add(name_value)
-                continue
-
-            id_list = list(id_list)
-            name_list = list(name_list)
-
-            for i in range(0, len(id_list)):
-                tap_data = get_data_from_API_by_id(config, state, stream.tap_stream_id, id_list[i], "campain")
-                for row in tap_data:
-
-                    keys = list(stream.schema.properties.keys())
-                    value = row.split(";")
-
-                    record_dict = {}
-                    record_dict['idcamp'] = id_list[i]
-                    record_dict['nomcamp'] = name_list[i]
-
-                    for j in range(0, len(value)):
-                        if j == 0 : # init date and skip idcamp and nomcamp
-                            last_date = value[0][0:4] + "-" + value[0][4:6] + "-" + value[0][6:8] + " 13:37:42 UTC"
-                            record_dict[keys[0]] = last_date
-                        else:
-                            record_dict[keys[j+2]] = value[j]
-                    singer.write_records(stream.tap_stream_id, [record_dict])
-
-        elif "stats_by_site" in stream.tap_stream_id:
-            tap_data = get_data_from_API(config, state, "stats_by_site")
+            tap_data = get_data_from_API(config, state, stream.tap_stream_id)
 
             for row in tap_data:
                 value = row.split(";")
@@ -123,28 +92,33 @@ def sync(config, state, catalog):
             id_list = list(id_list)
             name_list = list(name_list)
 
-            for i in range(0, len(id_list)):
-                tap_data = get_data_from_API_by_id(config, state, stream.tap_stream_id, id_list[i], "site")
+            for id, name in zip(id_list, name_list):
+                tap_data = get_data_from_API_by_id(config, state, stream.tap_stream_id, id,
+                                                   select_data_by_campain_or_site)
                 for row in tap_data:
 
                     keys = list(stream.schema.properties.keys())
                     value = row.split(";")
 
                     record_dict = {}
-                    record_dict['idsite'] = id_list[i]
-                    record_dict['nomsite'] = name_list[i]
+                    if stream.tap_stream_id == "stats_by_campain":
+                        record_dict['idsite'] = id
+                        record_dict['nomsite'] = name
+                    else:
+                        record_dict['idcamp'] = id
+                        record_dict['nomcamp'] = name
 
                     for j in range(0, len(value)):
-                        if j == 0 : # init date and skip idsite and nomsite
+                        if j == 0:  # init date and skip id and nom
                             last_date = value[0][0:4] + "-" + value[0][4:6] + "-" + value[0][6:8] + " 13:37:42 UTC"
                             record_dict[keys[0]] = last_date
                         else:
-                            record_dict[keys[j+2]] = value[j]
+                            record_dict[keys[j + 2]] = value[j]
+
                     singer.write_records(stream.tap_stream_id, [record_dict])
 
         else:
             tap_data = get_data_from_API(config, state, stream.tap_stream_id)
-
             for row in tap_data:
 
                 keys = list(stream.schema.properties.keys())
@@ -161,110 +135,55 @@ def sync(config, state, catalog):
                         last_date = value[0][0:4] + "-" + value[0][4:6] + "-01 13:37:42 UTC"
                         record_dict[keys[0]] = last_date
 
-
                 singer.write_records(stream.tap_stream_id, [record_dict])
 
-        bookmark_state(bookmark_column, stream.tap_stream_id, tap_data, config, state)
+        bookmark_state(stream.tap_stream_id, state)
     return
 
 
-def bookmark_state(bookmark_column, tap_stream_id, tap_data, config, state):
-    if bookmark_column == "date" and "sale" in tap_stream_id:
-        last_date = tap_data[-1].split(";")[9]
-        new_state = singer.write_bookmark(state, "properties",
-                                          "date_sale", last_date)
+def bookmark_state(tap_stream_id, state):
+    bookmark_name = "date_" + tap_stream_id
+    last_date = datetime.now() - timedelta(days=1)
+    last_date = last_date.isoformat()[0:10]
 
-        singer.write_state(new_state)
+    if "stats_by_month" in tap_stream_id:
+        last_date = last_date[0:4] + "-" + last_date[5:7] + "-01"
 
-    elif bookmark_column == "date" and "stats_by_campain" in tap_stream_id:
-        last_date = tap_data[-1].split(";")[0]
-        last_date = last_date[0:4] + "-" + last_date[4:6] + "-" + last_date[6:8]
-
-        new_state = singer.write_bookmark(state, "properties",
-                                          "date_stats_by_campain", last_date)
-
-        singer.write_state(new_state)
-
-    elif bookmark_column == "date" and "stats_by_site" in tap_stream_id:
-        last_date = tap_data[-1].split(";")[0]
-        last_date = last_date[0:4] + "-" + last_date[4:6] + "-" + last_date[6:8]
-
-        new_state = singer.write_bookmark(state, "properties",
-                                          "date_stats_by_site", last_date)
-
-        singer.write_state(new_state)
-
-    elif bookmark_column == "date" and "stats_by_day" in tap_stream_id:
-        last_date = tap_data[-1].split(";")[0]
-        last_date = last_date[0:4] + "-" + last_date[4:6] + "-" + last_date[6:8]
-
-        new_state = singer.write_bookmark(state, "properties", "date_stats_by_day", last_date)
-
-        singer.write_state(new_state)
-
-    elif bookmark_column == "date" and "stats_by_month" in tap_stream_id:
-        last_date = tap_data[-1].split(";")[0]
-        last_date = last_date[0:4] + "-" + last_date[4:6] + "-01"
-
-        new_state = singer.write_bookmark(state, "properties", "date_stats_by_month", last_date)
-
-        singer.write_state(new_state)
+    new_state = singer.write_bookmark(state, "properties",
+                                      bookmark_name, last_date)
+    singer.write_state(new_state)
 
     return
 
 
 def get_state_info(config, state, tap_stream_id):
-    dim = 3
+    key = "date_" + tap_stream_id
+    dict_dim = {"date_sale": 3,
+                "date_stats_by_campain": 1,
+                "date_stats_by_site": 2,
+                "date_stats_by_day": 3,
+                "date_stats_by_month": 4}
+
     try:
-        state = state['value']['bookmarks']['properties']
-        if tap_stream_id == "sale" \
-                and state['date_sale'] is not None:
-            debut = state['date_sale'][0:10]
-
-        elif "stats_by_campain" in tap_stream_id \
-                and state['date_stats_by_campain'] is not None:
-            dim = 1
-            debut = state['date_stats_by_campain'][0:10]
-
-        elif "stats_by_site" in tap_stream_id \
-                and state['date_stats_by_site'] is not None:
-            dim = 2
-            debut = state['date_stats_by_campain'][0:10]
-
-        elif "stats_by_day" in tap_stream_id \
-                and state['date_stats_by_day'] is not None:
-            dim = 3
-            debut = state['date_stats_by_day'][0:10]
-
-        elif "stats_by_month" in tap_stream_id \
-                and state['date_stats_by_month'] is not None:
-            dim = 4
-            debut = state['date_stats_by_month'][0:10]
-
-        else:
-            debut = config['debut']
-
+        state = state['bookmarks']['properties']
+        debut = state[key][0:10]
     except KeyError:
         debut = config['debut']
 
-    return dim, debut
+    return dict_dim[key], debut
 
 
 def get_data_from_API(config, state, tap_stream_id):
-    dim = 3
-
     dim, debut = get_state_info(config, state, tap_stream_id)
 
-    if "stats_by_campain" in tap_stream_id:
-        dim = 1
-    elif "stats_by_site" in tap_stream_id:
-        dim = 2
-    elif "stats_by_day" in tap_stream_id:
-        dim = 3
-    elif "stats_by_month" in tap_stream_id:
-        dim = 4
+    if "stats_by_month" in tap_stream_id:
+        debut = debut[0:8] + "01"
+        mois_dernier = datetime.now().replace(day=1) - timedelta(days=1)
+        fin = mois_dernier.isoformat()[0:10]
+    else:
+        hier = datetime.now() - timedelta(days=1)
+        fin = hier.isoformat()[0:10]
 
-    today = datetime.now().isoformat(timespec='hours')[0:10]
     if tap_stream_id == "sale":
         champs_reqann = "idcampagne,nomcampagne,argann,idsite,nomsite,cout,montant,monnaie,etat,date,dcookie,validation,cookie,tag,rappel",
 
@@ -272,7 +191,7 @@ def get_data_from_API(config, state, tap_stream_id):
         response = requests.get(url, params={"authl": config['authl'],
                                              "authv": config['authv'],
                                              "debut": debut,
-                                             "fin": today,
+                                             "fin": fin,
                                              "champs": champs_reqann})
     elif "stats" in tap_stream_id:
         url = "https://stat.netaffiliation.com/lisann.php"
@@ -280,8 +199,7 @@ def get_data_from_API(config, state, tap_stream_id):
                                              "authv": config['authv'],
                                              "dim": dim,
                                              "debut": debut,
-                                             "fin": today})
-
+                                             "fin": fin})
 
     if "OK" in response.text.splitlines()[0]:
         # skip 1st line telling how long the result is
@@ -295,8 +213,9 @@ def get_data_from_API(config, state, tap_stream_id):
 def get_data_from_API_by_id(config, state, tap_stream_id, id, campain_or_site):
     dim, debut = get_state_info(config, state, tap_stream_id)
     dim = 3
+    hier = datetime.now() - timedelta(days=1)
+    fin = hier.isoformat()[0:10]
 
-    today = datetime.now().isoformat(timespec='hours')[0:10]
     url = "https://stat.netaffiliation.com/lisann.php"
     if "campain" in campain_or_site:
         response = requests.get(url, params={"authl": config['authl'],
@@ -304,14 +223,14 @@ def get_data_from_API_by_id(config, state, tap_stream_id, id, campain_or_site):
                                              "dim": dim,
                                              "camp": id,
                                              "debut": debut,
-                                             "fin": today})
+                                             "fin": fin})
 
     elif "site" in campain_or_site:
         response = requests.get(url, params={"authl": config['authl'],
                                              "authv": config['authv'],
                                              "dim": dim,
                                              "debut": debut,
-                                             "fin": today,
+                                             "fin": fin,
                                              "site": id})
 
     if "OK" in response.text.splitlines()[0]:
