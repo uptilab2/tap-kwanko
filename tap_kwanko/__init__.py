@@ -8,6 +8,7 @@ from singer.schema import Schema
 import requests
 from datetime import datetime, timedelta
 
+
 REQUIRED_CONFIG_KEYS = ["debut", "authl", "authv"]
 LOGGER = singer.get_logger()
 
@@ -93,15 +94,14 @@ def sync(config, state, catalog):
             name_list = list(name_list)
 
             for id, name in zip(id_list, name_list):
-                tap_data = get_data_from_API_by_id(config, state, stream.tap_stream_id, id,
-                                                   select_data_by_campain_or_site)
+                tap_data = get_data_from_API_by_id(config, state, stream.tap_stream_id, id, select_data_by_campain_or_site)
                 for row in tap_data:
 
                     keys = list(stream.schema.properties.keys())
                     value = row.split(";")
 
                     record_dict = {}
-                    if stream.tap_stream_id == "stats_by_campain":
+                    if stream.tap_stream_id == "stats_by_site":
                         record_dict['idsite'] = id
                         record_dict['nomsite'] = name
                     else:
@@ -109,11 +109,11 @@ def sync(config, state, catalog):
                         record_dict['nomcamp'] = name
 
                     for j in range(0, len(value)):
-                        if j == 0:  # init date and skip id and nom
+                        if j == 0: # init date and skip id and nom
                             last_date = value[0][0:4] + "-" + value[0][4:6] + "-" + value[0][6:8] + " 13:37:42 UTC"
                             record_dict[keys[0]] = last_date
                         else:
-                            record_dict[keys[j + 2]] = value[j]
+                            record_dict[keys[j+2]] = value[j]
 
                     singer.write_records(stream.tap_stream_id, [record_dict])
 
@@ -135,6 +135,7 @@ def sync(config, state, catalog):
                         last_date = value[0][0:4] + "-" + value[0][4:6] + "-01 13:37:42 UTC"
                         record_dict[keys[0]] = last_date
 
+
                 singer.write_records(stream.tap_stream_id, [record_dict])
 
         bookmark_state(stream.tap_stream_id, state)
@@ -143,8 +144,7 @@ def sync(config, state, catalog):
 
 def bookmark_state(tap_stream_id, state):
     bookmark_name = "date_" + tap_stream_id
-    last_date = datetime.now() - timedelta(days=1)
-    last_date = last_date.isoformat()[0:10]
+    last_date = datetime.now().isoformat()[0:10]
 
     if "stats_by_month" in tap_stream_id:
         last_date = last_date[0:4] + "-" + last_date[5:7] + "-01"
@@ -184,6 +184,7 @@ def get_data_from_API(config, state, tap_stream_id):
         hier = datetime.now() - timedelta(days=1)
         fin = hier.isoformat()[0:10]
 
+
     if tap_stream_id == "sale":
         champs_reqann = "idcampagne,nomcampagne,argann,idsite,nomsite,cout,montant,monnaie,etat,date,dcookie,validation,cookie,tag,rappel",
 
@@ -200,6 +201,7 @@ def get_data_from_API(config, state, tap_stream_id):
                                              "dim": dim,
                                              "debut": debut,
                                              "fin": fin})
+
 
     if "OK" in response.text.splitlines()[0]:
         # skip 1st line telling how long the result is
