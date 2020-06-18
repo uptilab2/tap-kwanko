@@ -7,7 +7,7 @@ from singer.catalog import Catalog, CatalogEntry
 from singer.schema import Schema
 import requests
 from datetime import datetime, timedelta
-
+import time
 
 REQUIRED_CONFIG_KEYS = ["debut", "authl", "authv"]
 LOGGER = singer.get_logger()
@@ -63,7 +63,6 @@ def sync(config, state, catalog):
     for stream in catalog.get_selected_streams(state):
 
         LOGGER.info("Syncing stream:" + stream.tap_stream_id)
-        bookmark_column = stream.replication_key
         schema = stream.schema.to_dict()
         singer.write_schema(
             stream_name=stream.stream,
@@ -73,13 +72,42 @@ def sync(config, state, catalog):
 
         id_list = set()
         name_list = set()
-        if stream.tap_stream_id in ["stats_by_campain", "stats_by_site"]:
+        if "sale" == stream.tap_stream_id:
+            tap_data_types_formulaires = get_sales_data_from_API(config, state, stream.tap_stream_id, "f")
+            tap_data_types_ventes = get_sales_data_from_API(config, state, stream.tap_stream_id, "v")
+            record_dict = {}
+            for row in tap_data_types_formulaires:
+
+                keys = list(stream.schema.properties.keys())
+                value = row.split(";")
+
+                record_dict['types'] = "f"
+
+                for i in range(0, len(value)):
+                    record_dict[keys[i]] = value[i]
+
+                singer.write_records(stream.tap_stream_id, [record_dict])
+
+            for row in tap_data_types_ventes:
+
+                keys = list(stream.schema.properties.keys())
+                value = row.split(";")
+                record_dict = {}
+
+                record_dict['types'] = "v"
+
+                for i in range(0, len(value)):
+                    record_dict[keys[i]] = value[i]
+
+                singer.write_records(stream.tap_stream_id, [record_dict])
+
+        elif stream.tap_stream_id in ["stats_by_campain", "stats_by_site"]:
             if stream.tap_stream_id == "stats_by_campain":
                 select_data_by_campain_or_site = "campain"
             else:
                 select_data_by_campain_or_site = "site"
 
-            tap_data = get_data_from_API(config, state, stream.tap_stream_id)
+            tap_data = get_stats_data_from_API(config, state, stream.tap_stream_id)
 
             for row in tap_data:
                 value = row.split(";")
@@ -94,7 +122,8 @@ def sync(config, state, catalog):
             name_list = list(name_list)
 
             for id, name in zip(id_list, name_list):
-                tap_data = get_data_from_API_by_id(config, state, stream.tap_stream_id, id, select_data_by_campain_or_site)
+                tap_data = get_stats_data_from_API_by_id(config, state, stream.tap_stream_id, id,
+                                                         select_data_by_campain_or_site)
                 for row in tap_data:
 
                     keys = list(stream.schema.properties.keys())
@@ -109,16 +138,16 @@ def sync(config, state, catalog):
                         record_dict['nomcamp'] = name
 
                     for j in range(0, len(value)):
-                        if j == 0: # init date and skip id and nom
+                        if j == 0:  # init date and skip id and nom
                             last_date = value[0][0:4] + "-" + value[0][4:6] + "-" + value[0][6:8] + " 13:37:42 UTC"
                             record_dict[keys[0]] = last_date
                         else:
-                            record_dict[keys[j+2]] = value[j]
+                            record_dict[keys[j + 2]] = value[j]
 
                     singer.write_records(stream.tap_stream_id, [record_dict])
 
         else:
-            tap_data = get_data_from_API(config, state, stream.tap_stream_id)
+            tap_data = get_stats_data_from_API(config, state, stream.tap_stream_id)
             for row in tap_data:
 
                 keys = list(stream.schema.properties.keys())
@@ -134,7 +163,6 @@ def sync(config, state, catalog):
                     elif "stats_by_month" in stream.tap_stream_id:
                         last_date = value[0][0:4] + "-" + value[0][4:6] + "-01 13:37:42 UTC"
                         record_dict[keys[0]] = last_date
-
 
                 singer.write_records(stream.tap_stream_id, [record_dict])
 
@@ -173,35 +201,28 @@ def get_state_info(config, state, tap_stream_id):
     return dict_dim[key], debut
 
 
-def get_data_from_API(config, state, tap_stream_id):
+def get_sales_data_from_API(config, state, tap_stream_id, types):
     dim, debut = get_state_info(config, state, tap_stream_id)
+    hier = datetime.now() - timedelta(days=1)
+    fin = hier.isoformat()[0:10]
 
-    if "stats_by_month" in tap_stream_id:
-        debut = debut[0:8] + "01"
-        mois_dernier = datetime.now().replace(day=1) - timedelta(days=1)
-        fin = mois_dernier.isoformat()[0:10]
-    else:
-        hier = datetime.now() - timedelta(days=1)
-        fin = hier.isoformat()[0:10]
+    champs_reqann = "idcampagne,nomcampagne,argann,idsite,nomsite,cout,montant,monnaie,etat,date,dcookie,validation,cookie,tag,rappel",
 
-
-    if tap_stream_id == "sale":
-        champs_reqann = "idcampagne,nomcampagne,argann,idsite,nomsite,cout,montant,monnaie,etat,date,dcookie,validation,cookie,tag,rappel",
-
-        url = "https://stat.netaffiliation.com/reqann.php"
+    url = "https://stat.netaffiliation.com/reqann.php"
+    response = requests.get(url, params={"authl": config['authl'],
+                                         "authv": config['authv'],
+                                         "debut": debut,
+                                         "fin": fin,
+                                         "champs": champs_reqann,
+                                         "types": types})
+    while response.status_code != 200:
+        time.sleep(60)
         response = requests.get(url, params={"authl": config['authl'],
                                              "authv": config['authv'],
                                              "debut": debut,
                                              "fin": fin,
-                                             "champs": champs_reqann})
-    elif "stats" in tap_stream_id:
-        url = "https://stat.netaffiliation.com/lisann.php"
-        response = requests.get(url, params={"authl": config['authl'],
-                                             "authv": config['authv'],
-                                             "dim": dim,
-                                             "debut": debut,
-                                             "fin": fin})
-
+                                             "champs": champs_reqann,
+                                             "types": types})
 
     if "OK" in response.text.splitlines()[0]:
         # skip 1st line telling how long the result is
@@ -212,7 +233,41 @@ def get_data_from_API(config, state, tap_stream_id):
     return response
 
 
-def get_data_from_API_by_id(config, state, tap_stream_id, id, campain_or_site):
+def get_stats_data_from_API(config, state, tap_stream_id):
+    dim, debut = get_state_info(config, state, tap_stream_id)
+
+    if "stats_by_month" in tap_stream_id:
+        debut = debut[0:8] + "01"
+        mois_dernier = datetime.now().replace(day=1) - timedelta(days=1)
+        fin = mois_dernier.isoformat()[0:10]
+    else:
+        hier = datetime.now() - timedelta(days=1)
+        fin = hier.isoformat()[0:10]
+
+    url = "https://stat.netaffiliation.com/lisann.php"
+    response = requests.get(url, params={"authl": config['authl'],
+                                         "authv": config['authv'],
+                                         "dim": dim,
+                                         "debut": debut,
+                                         "fin": fin})
+    while response.status_code != 200:
+        time.sleep(60)
+        response = requests.get(url, params={"authl": config['authl'],
+                                             "authv": config['authv'],
+                                             "dim": dim,
+                                             "debut": debut,
+                                             "fin": fin})
+
+    if "OK" in response.text.splitlines()[0]:
+        # skip 1st line telling how long the result is
+        response = response.text.splitlines()[1:]
+    else:
+        print("Error on getting data from Kwanko (get_data_from_API())")
+        return
+    return response
+
+
+def get_stats_data_from_API_by_id(config, state, tap_stream_id, id, campain_or_site):
     dim, debut = get_state_info(config, state, tap_stream_id)
     dim = 3
     hier = datetime.now() - timedelta(days=1)
@@ -226,6 +281,14 @@ def get_data_from_API_by_id(config, state, tap_stream_id, id, campain_or_site):
                                              "camp": id,
                                              "debut": debut,
                                              "fin": fin})
+        while response.status_code != 200:
+            time.sleep(60)
+            response = requests.get(url, params={"authl": config['authl'],
+                                                 "authv": config['authv'],
+                                                 "dim": dim,
+                                                 "camp": id,
+                                                 "debut": debut,
+                                                 "fin": fin})
 
     elif "site" in campain_or_site:
         response = requests.get(url, params={"authl": config['authl'],
@@ -235,11 +298,21 @@ def get_data_from_API_by_id(config, state, tap_stream_id, id, campain_or_site):
                                              "fin": fin,
                                              "site": id})
 
+        while response.status_code != 200:
+            time.sleep(60)
+            response = requests.get(url, params={"authl": config['authl'],
+                                                 "authv": config['authv'],
+                                                 "dim": dim,
+                                                 "debut": debut,
+                                                 "fin": fin,
+                                                 "site": id})
+
     if "OK" in response.text.splitlines()[0]:
         # skip 1st line telling how long the result is
         response = response.text.splitlines()[1:]
     else:
-        print("Error on getting data from Kwanko (get_data_from_API())")
+        print("Error on getting data from Kwanko (get_stats_data_from_API_by_id())")
+
         return
     return response
 
