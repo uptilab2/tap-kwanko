@@ -37,7 +37,7 @@ def discover():
         key_properties = []
 
         replication_key = "date"
-        replication_method = "INCREMENTAL"
+        replication_method = "FULL_TABLE"
         streams.append(
             CatalogEntry(
                 tap_stream_id=stream_id,
