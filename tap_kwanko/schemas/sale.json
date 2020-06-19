@@ -4,6 +4,10 @@
     "required" : ["idcampagne"],
     "properties":
      {
+       "types": {
+          "type": "string",
+          "enum": ["f", "v"]
+        },
         "idcampagne": {
           "type": "integer"
          },
