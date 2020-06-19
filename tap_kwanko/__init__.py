@@ -84,7 +84,7 @@ def sync(config, state, catalog):
                 record_dict['types'] = "f"
 
                 for i in range(0, len(value)):
-                    record_dict[keys[i]] = value[i]
+                    record_dict[keys[i+1]] = value[i]
 
                 singer.write_records(stream.tap_stream_id, [record_dict])
 
@@ -97,7 +97,7 @@ def sync(config, state, catalog):
                 record_dict['types'] = "v"
 
                 for i in range(0, len(value)):
-                    record_dict[keys[i]] = value[i]
+                    record_dict[keys[i+1]] = value[i]
 
                 singer.write_records(stream.tap_stream_id, [record_dict])
 
