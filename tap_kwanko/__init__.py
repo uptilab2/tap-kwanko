@@ -61,6 +61,10 @@ def sync(config, state, catalog):
     """ Sync data from tap source """
     # Loop over selected streams in catalog
     for stream in catalog.get_selected_streams(state):
+        if not state:
+            stream.replication_method = "FULL_TABLE"
+        else:
+            stream.replication_method = "INCREMENTAL"
 
         LOGGER.info("Syncing stream:" + stream.tap_stream_id)
         schema = stream.schema.to_dict()
@@ -205,7 +209,6 @@ def get_sales_data_from_API(config, state, tap_stream_id, types):
     dim, debut = get_state_info(config, state, tap_stream_id)
     hier = datetime.now() - timedelta(days=1)
     fin = hier.isoformat()[0:10]
-
     champs_reqann = "idcampagne,nomcampagne,argann,idsite,nomsite,cout,montant,monnaie,etat,date,dcookie,validation,cookie,tag,rappel",
 
     url = "https://stat.netaffiliation.com/reqann.php"
