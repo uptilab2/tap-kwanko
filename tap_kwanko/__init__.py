@@ -37,7 +37,7 @@ def discover():
         key_properties = []
 
         replication_key = "date"
-        replication_method = "FULL_TABLE"
+        replication_method = "INCREMENTAL"
         streams.append(
             CatalogEntry(
                 tap_stream_id=stream_id,
@@ -61,11 +61,6 @@ def sync(config, state, catalog):
     """ Sync data from tap source """
     # Loop over selected streams in catalog
     for stream in catalog.get_selected_streams(state):
-        if not state:
-            stream.replication_method = "FULL_TABLE"
-        else:
-            stream.replication_method = "INCREMENTAL"
-
         LOGGER.info("Syncing stream:" + stream.tap_stream_id)
         schema = stream.schema.to_dict()
         singer.write_schema(
