@@ -8,6 +8,7 @@ from singer.schema import Schema
 import requests
 from datetime import datetime, timedelta
 import time
+import html
 
 REQUIRED_CONFIG_KEYS = ["debut", "authl", "authv"]
 LOGGER = singer.get_logger()
@@ -61,6 +62,11 @@ def sync(config, state, catalog):
     """ Sync data from tap source """
     # Loop over selected streams in catalog
     for stream in catalog.get_selected_streams(state):
+        if not state:
+            stream.replication_method = "FULL_TABLE"
+        else:
+            stream.replication_method = "INCREMENTAL"
+
         LOGGER.info("Syncing stream:" + stream.tap_stream_id)
         schema = stream.schema.to_dict()
         singer.write_schema(
@@ -76,19 +82,18 @@ def sync(config, state, catalog):
             tap_data_types_ventes = get_sales_data_from_API(config, state, stream.tap_stream_id, "v")
             record_dict = {}
             for row in tap_data_types_formulaires:
-
+                row = html.unescape(row)
                 keys = list(stream.schema.properties.keys())
                 value = row.split(";")
 
                 record_dict['types'] = "f"
-
                 for i in range(0, len(value)):
                     record_dict[keys[i+1]] = value[i]
 
                 singer.write_records(stream.tap_stream_id, [record_dict])
 
             for row in tap_data_types_ventes:
-
+                row = html.unescape(row)
                 keys = list(stream.schema.properties.keys())
                 value = row.split(";")
                 record_dict = {}
@@ -124,7 +129,7 @@ def sync(config, state, catalog):
                 tap_data = get_stats_data_from_API_by_id(config, state, stream.tap_stream_id, id,
                                                          select_data_by_campain_or_site)
                 for row in tap_data:
-
+                    row = html.unescape(row)
                     keys = list(stream.schema.properties.keys())
                     value = row.split(";")
 
@@ -148,7 +153,7 @@ def sync(config, state, catalog):
         else:
             tap_data = get_stats_data_from_API(config, state, stream.tap_stream_id)
             for row in tap_data:
-
+                row = html.unescape(row)
                 keys = list(stream.schema.properties.keys())
                 value = row.split(";")
                 record_dict = {}
