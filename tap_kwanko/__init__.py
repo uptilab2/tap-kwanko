@@ -70,8 +70,9 @@ def sync(config, state, catalog):
             key_properties=stream.key_properties,
         )
 
-        id_list = set()
-        name_list = set()
+        id_list_ordered = []
+        name_list_ordered = []
+
         if "sale" == stream.tap_stream_id:
             tap_data_types_formulaires = get_sales_data_from_API(config, state, stream.tap_stream_id, "f")
             tap_data_types_ventes = get_sales_data_from_API(config, state, stream.tap_stream_id, "v")
@@ -112,15 +113,13 @@ def sync(config, state, catalog):
                 value = row.split(";")
                 id_value = value[0]
                 name_value = value[1]
+                if id_value not in id_list_ordered and name_value not in name_list_ordered:
+                    id_list_ordered.append(id_value)
+                    name_list_ordered.append(name_value)
 
-                id_list.add(id_value)
-                name_list.add(name_value)
                 continue
 
-            id_list = list(id_list)
-            name_list = list(name_list)
-
-            for id, name in zip(id_list, name_list):
+            for id, name in zip(id_list_ordered, name_list_ordered):
                 tap_data = get_stats_data_from_API_by_id(config, state, stream.tap_stream_id, id,
                                                          select_data_by_campain_or_site)
                 for row in tap_data:
@@ -304,7 +303,6 @@ def get_stats_data_from_API_by_id(config, state, tap_stream_id, id, campain_or_s
                                                  "debut": debut,
                                                  "fin": fin,
                                                  "site": id})
-
     if "OK" in response.text.splitlines()[0]:
         # skip 1st line telling how long the result is
         response = response.text.splitlines()[1:]
